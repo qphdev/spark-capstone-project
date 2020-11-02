@@ -1,2 +1,23 @@
-*.class
+# User-specific stuff
+**/workspace.xml
+**/tasks.xml
+**/usage.statistics.xml
+**/dictionaries
+**/shelf
+
+# intellij idea
 *.log
+*.iml
+*.ipr
+*.iws
+.idea/modules.xml
+.idea/misc.xml
+
+# libs
+**/libraries
+
+# mac
+.DS_Store
+
+*.class
+**/target
