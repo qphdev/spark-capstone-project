@@ -8,7 +8,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 
-case class SessionInfoAggBuffer(var currIdx: Int, maps: ListBuffer[mutable.Map[String, String]])
+case class SessionInfoAggBuffer(currIdx: Int, maps: ListBuffer[mutable.Map[String, String]])
 
 
 object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer, List[Map[String, String]]] {
@@ -20,19 +20,25 @@ object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer,
         buff.maps += mutable.Map.empty[String, String]
 
         buff.maps(buff.currIdx)("campaignId") = in.campaignId
-
         buff.maps(buff.currIdx)("channelId") = in.channelId
+
+        buff
+
 
       case "purchase" =>
         buff.maps(buff.currIdx).get("purchase") match {
-          case Some(_) => buff.maps(buff.currIdx)("purchase") += s",${in.purchaseId}"
-          case None => buff.maps(buff.currIdx)("purchase") = in.purchaseId
+          case Some(_) =>
+            buff.maps(buff.currIdx)("purchase") += s",${in.purchaseId}"
+            buff
+
+          case None =>
+            buff.maps(buff.currIdx)("purchase") = in.purchaseId
+            buff
         }
 
       case "app_close" =>
-        buff.currIdx += 1
+        buff.copy(currIdx = buff.currIdx + 1)
     }
-    buff
   }
 
   def merge(b1: SessionInfoAggBuffer, b2: SessionInfoAggBuffer): SessionInfoAggBuffer =
