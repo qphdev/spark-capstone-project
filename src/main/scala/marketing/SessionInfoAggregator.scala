@@ -24,7 +24,6 @@ object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer,
 
         buff
 
-
       case "purchase" =>
         buff.maps(buff.currIdx).get("purchase") match {
           case Some(_) =>
