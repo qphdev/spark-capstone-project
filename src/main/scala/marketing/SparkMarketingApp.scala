@@ -1,6 +1,7 @@
 package marketing
 
-import marketing.MarketingDataTransformations._
+import marketing.MarketingData.readCsvData
+import marketing.MarketingData._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 
@@ -8,7 +9,23 @@ import org.apache.spark.sql.types._
 object SparkMarketingApp extends SparkSessionWrapper {
 
   def main(args: Array[String]): Unit = {
+    val sessionsDf = getClickstreamSessionsDf(args(0))
+    val purchasesDf = getPurchasesDf(args(1))
 
+    val joinedPurchases = joinPurchasesWithSessions(purchasesDf, sessionsDf)
+
+    val q1df = topTenCampaignsByRevenueSql(joinedPurchases)
+
+    val q2df = topChannelByNumSessionsSql(joinedPurchases)
+
+    saveDfToCsv(q1df, args(2))
+    saveDfToCsv(q2df, args(3))
+
+    spark.stop()
+  }
+
+
+  def getClickstreamSessionsDf(path: String): DataFrame = {
     val clickstreamSchema = StructType(
       StructField("userId", StringType) ::
         StructField("eventId", StringType) ::
@@ -17,20 +34,21 @@ object SparkMarketingApp extends SparkSessionWrapper {
         StructField("attributes", StringType) :: Nil
     )
 
-    val clickstreamDf = readCsvData(
-      "file:///Users/mtoporova/Documents/csvData/mobile-app-clickstream_sample.csv",
-      clickstreamSchema)
+    val clickstreamDf = readCsvData(path, clickstreamSchema)
 
     val clickstreamFiltered = filterNeededEvents(clickstreamDf, Seq("app_open", "app_close", "purchase"))
     val clickstreamQuotedAttrs = normalizeQuotesToNewCol(clickstreamFiltered)
 
     val clickstreamWithAttrs = extractJsonAttributes(clickstreamQuotedAttrs)
 
-    val clickstreamSessionsPerUser = aggClickstreamSessions(clickstreamWithAttrs)
-    val clickstreamSessions = explodeClickstreamSessions(clickstreamSessionsPerUser)
+    val clickstreamSessions = aggClickstreamSessions(clickstreamWithAttrs)
     val clickstreamWithSessionIds = generateSessionIds(clickstreamSessions)
-    val sessionsDf = explodeSessionPurchases(clickstreamWithSessionIds)
 
+    explodeSessionPurchases(clickstreamWithSessionIds)
+  }
+
+
+  def getPurchasesDf(path: String): DataFrame = {
     val purchasesSchema = StructType(
       StructField("purchaseId", StringType) ::
         StructField("purchaseTime", TimestampType) ::
@@ -38,21 +56,7 @@ object SparkMarketingApp extends SparkSessionWrapper {
         StructField("isConfirmed", BooleanType) :: Nil
     )
 
-    val purchasesDf = readCsvData(
-      "file:///Users/mtoporova/Documents/csvData/purchases_sample - purchases_sample.csv",
-      purchasesSchema)
-
-    val joinedPurchases = joinPurchasesWithSessions(purchasesDf, sessionsDf)
-
-    val q1df = topTenCampaignsByRevenueSql(joinedPurchases)
-
-    val q2df = topChannelByNumSessionsSql(joinedPurchases)
-
-    q2df.show(false)
-    q1df.show(false)
-
-    clickstreamQuotedAttrs.show(false)
-    spark.stop()
+    readCsvData(path, purchasesSchema)
   }
 
 
@@ -97,4 +101,15 @@ object SparkMarketingApp extends SparkSessionWrapper {
        |      order by count(distinct sessionId) desc)
        |group by campaignId
        |""".stripMargin
+
+
+  def saveDfToCsv(df: DataFrame, path: String): Unit = {
+    df.coalesce(1)
+      .write
+      .format("csv")
+      .option("header", true)
+      .option("sep", ",")
+      .mode("overwrite")
+      .save(path)
+  }
 }

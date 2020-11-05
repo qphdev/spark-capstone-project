@@ -21,21 +21,24 @@ object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer,
 
         buff.maps(buff.currIdx)("campaignId") = in.campaignId
         buff.maps(buff.currIdx)("channelId") = in.channelId
-
+        println(s"op:$buff")
         buff
 
       case "purchase" =>
         buff.maps(buff.currIdx).get("purchase") match {
           case Some(_) =>
             buff.maps(buff.currIdx)("purchase") += s",${in.purchaseId}"
+            println(s"pur:$buff")
             buff
 
           case None =>
             buff.maps(buff.currIdx)("purchase") = in.purchaseId
+            println(s"pur:$buff")
             buff
         }
 
       case "app_close" =>
+        println(s"clo:$buff")
         buff.copy(currIdx = buff.currIdx + 1)
     }
   }

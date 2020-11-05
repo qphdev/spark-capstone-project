@@ -2,8 +2,8 @@ package marketing
 
 import org.apache.spark.sql.{DataFrame, Dataset}
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{explode, explode_outer, from_json,
-  lit, regexp_extract, regexp_replace, row_number, split}
+import org.apache.spark.sql.functions.{explode, explode_outer, from_json, lit,
+  regexp_extract, regexp_replace, row_number, split, concat}
 import org.apache.spark.sql.types.{MapType, StringType, StructType}
 
 
@@ -11,7 +11,7 @@ case class EventInfo(userId: String, eventType: String,
                      campaignId: String, channelId: String, purchaseId: String)
 
 
-object MarketingDataTransformations extends SparkSessionWrapper {
+object MarketingData extends SparkSessionWrapper {
 
   import spark.implicits._
 
@@ -55,10 +55,12 @@ object MarketingDataTransformations extends SparkSessionWrapper {
     }
   }
 
-  def aggClickstreamSessions(clickstreamDf: DataFrame): Dataset[(String, List[Map[String, String]])] = {
+  def aggClickstreamSessions(clickstreamDf: DataFrame): DataFrame = {
     val sessionAgg = SessionInfoAggregator.toColumn.name("session")
 
-    clickstreamTyped(clickstreamDf).groupByKey(ei => ei.userId).agg(sessionAgg)
+    val typedGrouped = clickstreamTyped(clickstreamDf).groupByKey(ei => ei.userId)
+
+    explodeClickstreamSessions(typedGrouped.agg(sessionAgg))
   }
 
   def explodeClickstreamSessions(clickstreamDs: Dataset[(String, List[Map[String, String]])]): DataFrame = {
@@ -67,8 +69,9 @@ object MarketingDataTransformations extends SparkSessionWrapper {
   }
 
   def generateSessionIds(clickstreamDf: DataFrame): DataFrame = {
-    clickstreamDf.withColumn("sessionId",
-      row_number.over(Window.partitionBy(lit(1)).orderBy("userId")))
+    clickstreamDf
+      .withColumn("sessionId",
+        concat(lit("s"), row_number.over(Window.partitionBy(lit(1)).orderBy("userId"))))
   }
 
   def explodeSessionPurchases(clickstreamDf: DataFrame): DataFrame = {
