@@ -1,6 +1,7 @@
 package marketing
 
-import marketing.MarketingData.{aggClickstreamSessions, explodeSessionPurchases, extractJsonAttributes, generateSessionIds}
+import marketing.ClickstreamDataTransformations.{aggClickstreamSessions, explodeSessionPurchases,
+  extractJsonAttributes, generateSessionIds}
 import marketing.SparkMarketingApp.{joinPurchasesWithSessions, topChannelByNumSessionsSql, topTenCampaignsByRevenueSql}
 import java.sql.Timestamp
 
@@ -34,16 +35,16 @@ class MarketingTestSuite extends FunSuite with DataFrameSuiteBase {
 
     val actualRes = extractJsonAttributes(df)
     val expectedRes = Seq(
-      ("u1", "1", Timestamp.valueOf("2000-01-01 10:10:10"), "o", "c1", "ch1", null),
-      ("u2", "2", Timestamp.valueOf("2001-01-01 10:10:10"), "p", null, null, "p1"),
-      ("u2", "3", Timestamp.valueOf("2001-01-01 10:11:10"), "c", null, null, null)
-    ).toDF("userId", "eventId", "eventTime", "eventType", "campaign_id", "channel_id", "purchase_id")
+      ("u1", "o", "c1", "ch1", null),
+      ("u2", "p", null, null, "p1"),
+      ("u2", "c", null, null, null)
+    ).toDF("userId", "eventType", "campaign_id", "channel_id", "purchase_id")
 
     assertDataFrameEquals(actualRes, expectedRes)
   }
 
 
-  test("aggClickstreamSessions gathers session info") {
+  test("aggClickstreamSessions collects each session info into one row") {
     import spark.implicits._
 
     val df = Seq(
@@ -57,8 +58,6 @@ class MarketingTestSuite extends FunSuite with DataFrameSuiteBase {
       ("u2", "app_open", "c2", "ch3", null),
       ("u2", "app_close", null, null, null)
     ).toDF("userId", "eventType", "campaign_id", "channel_id", "purchase_id")
-
-    df.show()
 
     val actualRes = aggClickstreamSessions(df)
 

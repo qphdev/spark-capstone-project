@@ -8,9 +8,11 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 
-case class SessionInfoAggBuffer(currIdx: Int, maps: ListBuffer[mutable.Map[String, String]])
-
-
+/**
+ * Collects session information (campaignId, channelId, purchaseId) into a list of user's sessions.
+ * Each session starts with "app_open" event, ends with "app_close" event and may or may not contain purchases.
+ * Multiple purchaseIds related to the same session are concatenated.
+ */
 object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer, List[Map[String, String]]] {
   def zero: SessionInfoAggBuffer = SessionInfoAggBuffer(0, ListBuffer.empty[mutable.Map[String, String]])
 
@@ -21,24 +23,21 @@ object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer,
 
         buff.maps(buff.currIdx)("campaignId") = in.campaignId
         buff.maps(buff.currIdx)("channelId") = in.channelId
-        println(s"op:$buff")
+
         buff
 
       case "purchase" =>
         buff.maps(buff.currIdx).get("purchase") match {
           case Some(_) =>
             buff.maps(buff.currIdx)("purchase") += s",${in.purchaseId}"
-            println(s"pur:$buff")
             buff
 
           case None =>
             buff.maps(buff.currIdx)("purchase") = in.purchaseId
-            println(s"pur:$buff")
             buff
         }
 
       case "app_close" =>
-        println(s"clo:$buff")
         buff.copy(currIdx = buff.currIdx + 1)
     }
   }
@@ -56,3 +55,6 @@ object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer,
   def outputEncoder: Encoder[List[Map[String, String]]] =
     implicitly(ExpressionEncoder[List[Map[String, String]]])
 }
+
+
+case class SessionInfoAggBuffer(currIdx: Int, maps: ListBuffer[mutable.Map[String, String]])
