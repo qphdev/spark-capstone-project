@@ -7,8 +7,8 @@ import org.apache.spark.sql.types._
 
 object SparkMarketingApp extends SparkSessionWrapper {
 
-  private val clickstreamCsvPath = "/Users/mtoporova/Documents/csvData/mobile-app-clickstream_sample.csv"
-  private val purchasesCsvPath = "/Users/mtoporova/Documents/csvData/purchases_sample.csv"
+  private val clickstreamCsvPath = "src/main/resources/marketing/mobile-app-clickstream_sample.csv"
+  private val purchasesCsvPath = "src/main/resources/marketing/purchases_sample.csv"
   private val topCampaignsCsvPath = "topTenCampaigns"
   private val topChannelsCsvPath = "topChannels"
 
