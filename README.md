@@ -16,12 +16,12 @@ __Note__ that AdoptOpenJDK JDK 8 or AdoptOpenJDK JDK 11 is recommended to use wi
 ### Setup
 To use this project just clone it from github:
 ```bash
-git clone https://github.com/qphdev/spark-capstone-project.git
+git clone https://github.com/gridu/Spark-Scala-mtoporova.git
 ```
 
 Two command line arguments are expected: path to clickstream dataset and path to purchases dataset.
 ```bash
-cd ~/spark-capstone-project
+cd ~/Spark-Scala-mtoporova
 
 # To build and run project
 sbt "run <clickstream-path> <purchases-path>"
