@@ -1,5 +1,8 @@
 # spark-capstone-project
-Spark application for marketing data analysis.
+Spark application for marketing data analysis. It is dedicated to answering two questions:
+* What are the Top 10 marketing campaigns that bring the biggest revenue?
+* What is the most popular (i.e. Top) channel that drives the highest amount of unique sessions with the App in each campaign?
+
 This is a training project to memorize the material from [Spark course on coursera](https://www.coursera.org/learn/scala-spark-big-data/home/welcome). 
 
 ### Technologies
@@ -11,18 +14,21 @@ Project is created with:
 __Note__ that AdoptOpenJDK JDK 8 or AdoptOpenJDK JDK 11 is recommended to use with sbt.
 
 ### Setup
+To use this project just clone it from github:
 ```bash
 git clone https://github.com/qphdev/spark-capstone-project.git
+```
+
+Two command line arguments are expected: path to clickstream dataset and path to purchases dataset.
+```bash
 cd ~/spark-capstone-project
 
 # To build and run project
-sbt run
+sbt "run <clickstream-path> <purchases-path>"
 
 # To run tests
 sbt test
 ```
 
-### Input & output
-Datasets to analyze are _mobile-app-clickstream_sample.csv_ and _purchases_sample.csv_, located at src/main/resources/marketing.
-
-The output consists of two small datasets and is written to folders _topChannels_ and _topTenCampaigns_.
+### Output
+The output is two csv files located in "topChannels" and "topTenCampaigns" folders in the root folder of the project. 

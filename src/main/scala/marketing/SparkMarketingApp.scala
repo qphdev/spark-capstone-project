@@ -7,16 +7,14 @@ import org.apache.spark.sql.types._
 
 object SparkMarketingApp extends SparkSessionWrapper {
 
-  private val clickstreamCsvPath = "src/main/resources/marketing/mobile-app-clickstream_sample.csv"
-  private val purchasesCsvPath = "src/main/resources/marketing/purchases_sample.csv"
   private val topCampaignsCsvPath = "topTenCampaigns"
   private val topChannelsCsvPath = "topChannels"
 
   def main(args: Array[String]): Unit = {
-    val sessionsDf = getClickstreamSessionsDf(clickstreamCsvPath)
-    val purchasesDf = getPurchasesDf(purchasesCsvPath)
+    val sessionsDf = getClickstreamSessionsDf(args(0))
+    val purchasesDf = getPurchasesDf(args(1))
 
-    val joinedPurchases = joinPurchasesWithSessions(purchasesDf, sessionsDf).persist()
+    val joinedPurchases = joinPurchasesWithSessions(purchasesDf, sessionsDf).cache()
 
     val question1df = topTenCampaignsByRevenueSql(joinedPurchases)
 
