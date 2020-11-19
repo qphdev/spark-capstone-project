@@ -4,6 +4,7 @@ import com.holdenkarau.spark.testing.DataFrameSuiteBase
 import marketing.MarketingDataUtils.normalizeQuotes
 import org.scalatest.FunSuite
 
+
 class MarketingDataUtilsSuite extends FunSuite with DataFrameSuiteBase {
 
   test("normalizeQuotes replaces tilted quotes with regular ones") {

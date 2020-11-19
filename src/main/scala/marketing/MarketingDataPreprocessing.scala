@@ -7,7 +7,7 @@ import org.apache.spark.sql.functions.{concat, from_json, last, lit, regexp_extr
 import org.apache.spark.sql.types.{BooleanType, DoubleType, MapType, StringType, StructField, StructType, TimestampType}
 
 
-object MarketingDataTransformations extends SparkSessionWrapper {
+object MarketingDataPreprocessing extends SparkSessionWrapper {
 
   private val clickstreamSchema = StructType(
     StructField("userId", StringType) ::
@@ -68,7 +68,7 @@ object MarketingDataTransformations extends SparkSessionWrapper {
    * @param clickstreamDf clickstream DF with normalized quotes
    * @return clickstream DF with schema
    *         { userId: String, eventId: String, eventTime: TimeStamp, eventType: String,
-   *           campaign_id: String, channel_id: String, purchase_id: String }
+   *           campaignId: String, channelId: String, purchaseId: String }
    */
   def extractJsonAttributes(clickstreamDf: DataFrame): DataFrame = {
     val mapSchema = MapType(StringType, StringType)
@@ -89,12 +89,13 @@ object MarketingDataTransformations extends SparkSessionWrapper {
    * @return clickstream DF with sessionId column
    */
   def generateSessionIds(clickstreamDf: DataFrame): DataFrame = {
-    val byUserIdOrdByEventTime = Window.partitionBy($"userId").orderBy($"eventTime")
+    val byUserIdOrdByEventTime = Window
+      .partitionBy($"userId").orderBy($"eventTime")
+      .rowsBetween(Window.unboundedPreceding, 0)
 
     clickstreamDf
       .withColumn("open", when($"eventType" === "app_open", $"eventId"))
-      .withColumn("lastOpen",
-        last($"open", ignoreNulls = true).over(byUserIdOrdByEventTime.rowsBetween(Window.unboundedPreceding, 0)))
+      .withColumn("lastOpen", last($"open", ignoreNulls = true).over(byUserIdOrdByEventTime))
       .withColumn("sessionId", concat(lit("s"), $"lastOpen"))
       .drop("open", "lastOpen")
   }
@@ -126,10 +127,35 @@ object MarketingDataTransformations extends SparkSessionWrapper {
   }
 
 
+  /**
+   * Joins purchases DF with clickstream sessions DF, preserving sessions with no purchases
+   * @param purchasesDf DF with schema
+   *                    { purchaseId: String, purchaseTime: Timestamp, billingCost: Double, isConfirmed: Boolean }
+   * @param sessionsDf DF with schema
+   *                   { sessionId: String, campaignId: String, channelId: String, purchaseId: String }
+   * @return joined DF with schema
+   *         { purchaseId: String, purchaseTime: Timestamp, billingCost: Double, isConfirmed: Boolean,
+   *           sessionId: String, campaignId: String, channelId: String }
+   */
+  def joinPurchasesWithSessions(purchasesDf: DataFrame, sessionsDf: DataFrame): DataFrame = {
+    purchasesDf.createOrReplaceTempView("purchase")
+    sessionsDf.createOrReplaceTempView("session")
+
+    val joinQuery =
+      s"""
+         |select purchase.purchaseId, purchaseTime, billingCost, isConfirmed, sessionId, campaignId, channelId
+         |from purchase full outer join session
+         |              on purchase.purchaseId <=> session.purchaseId
+         |""".stripMargin
+
+    spark.sql(joinQuery)
+  }
+
+
   /** Selects columns needed for session aggregation and transforms
    *  clickstream DF into a Dataset[SessionInfo]
    *  */
-  def clickstreamSessionInfoDs(clickstreamDf: DataFrame): Dataset[SessionInfo] = {
+  private def clickstreamSessionInfoDs(clickstreamDf: DataFrame): Dataset[SessionInfo] = {
     clickstreamDf
       .select($"sessionId", $"eventType", $"campaignId", $"channelId", $"purchaseId")
       .as[SessionInfo]

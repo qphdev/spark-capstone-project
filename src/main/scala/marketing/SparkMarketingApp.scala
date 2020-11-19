@@ -1,7 +1,7 @@
 package marketing
 
-import marketing.MarketingDataSQL.{joinPurchasesWithSessions, topChannelByNumSessionsSql, topCampaignsByRevenueSql}
-import marketing.MarketingDataTransformations._
+import marketing.MarketingDataSQLAnalysis.{topChannelByNumSessionsSql, topCampaignsByRevenueSql}
+import marketing.MarketingDataPreprocessing._
 import marketing.MarketingDataUtils.saveDfToCsv
 
 

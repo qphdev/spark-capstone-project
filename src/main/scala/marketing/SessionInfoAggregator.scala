@@ -1,6 +1,6 @@
 package marketing
 
-import marketing.MarketingDataTransformations.SessionInfo
+import marketing.MarketingDataPreprocessing.SessionInfo
 import marketing.SessionInfoAggregator.SessionInfoAgg
 
 import org.apache.spark.sql.{Encoder, Encoders}
