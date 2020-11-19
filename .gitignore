@@ -10,8 +10,7 @@
 *.iml
 *.ipr
 *.iws
-.idea/modules.xml
-.idea/misc.xml
+**/.idea
 
 # libs
 **/libraries

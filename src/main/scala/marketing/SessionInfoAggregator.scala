@@ -1,60 +1,45 @@
 package marketing
 
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.expressions.Aggregator
-import org.apache.spark.sql.{Encoder, Encoders}
+import marketing.MarketingDataTransformations.SessionInfo
+import marketing.SessionInfoAggregator.SessionInfoAgg
 
-import scala.collection.mutable
+import org.apache.spark.sql.{Encoder, Encoders}
+import org.apache.spark.sql.expressions.Aggregator
+
 import scala.collection.mutable.ListBuffer
 
 
-/**
- * Collects session information (campaignId, channelId, purchaseId) into a list of user's sessions.
- * Each session starts with "app_open" event, ends with "app_close" event and may or may not contain purchases.
- * Multiple purchaseIds related to the same session are concatenated.
- */
-object SessionInfoAggregator extends Aggregator[EventInfo, SessionInfoAggBuffer, List[Map[String, String]]] {
-  def zero: SessionInfoAggBuffer = SessionInfoAggBuffer(0, ListBuffer.empty[mutable.Map[String, String]])
+class SessionInfoAggregator extends Aggregator[SessionInfo, SessionInfoAgg, SessionInfoAgg]{
+  override def zero: SessionInfoAgg = SessionInfoAgg("", "", ListBuffer.empty[String])
 
-  def reduce(buff: SessionInfoAggBuffer, in: EventInfo): SessionInfoAggBuffer = {
+  override def reduce(buff: SessionInfoAgg, in: SessionInfo): SessionInfoAgg = {
     in.eventType match {
-      case "app_open" =>
-        buff.maps += mutable.Map.empty[String, String]
-
-        buff.maps(buff.currIdx)("campaignId") = in.campaignId
-        buff.maps(buff.currIdx)("channelId") = in.channelId
-
+      case "app_open" if in.campaignId.isDefined && in.channelId.isDefined =>
+        buff.campaignId = in.campaignId.get
+        buff.channelId = in.channelId.get
         buff
 
-      case "purchase" =>
-        buff.maps(buff.currIdx).get("purchase") match {
-          case Some(_) =>
-            buff.maps(buff.currIdx)("purchase") += s",${in.purchaseId}"
-            buff
+      case "purchase" if in.purchaseId.isDefined =>
+        buff.purchaseId += in.purchaseId.get
+        buff
 
-          case None =>
-            buff.maps(buff.currIdx)("purchase") = in.purchaseId
-            buff
-        }
-
-      case "app_close" =>
-        buff.copy(currIdx = buff.currIdx + 1)
+      case _ =>
+        buff
     }
   }
 
-  def merge(b1: SessionInfoAggBuffer, b2: SessionInfoAggBuffer): SessionInfoAggBuffer =
-    SessionInfoAggBuffer(0, b1.maps ++ b2.maps)
-
-
-  def finish(red: SessionInfoAggBuffer): List[Map[String, String]] = {
-    red.maps.map(_.toMap).toList
+  override def merge(b1: SessionInfoAgg, b2: SessionInfoAgg): SessionInfoAgg = {
+    SessionInfoAgg(b1.campaignId + b2.campaignId, b1.channelId + b2.channelId, b1.purchaseId ++ b2.purchaseId)
   }
 
-  def bufferEncoder: Encoder[SessionInfoAggBuffer] = Encoders.product[SessionInfoAggBuffer]
+  override def finish(red: SessionInfoAgg): SessionInfoAgg = red
 
-  def outputEncoder: Encoder[List[Map[String, String]]] =
-    implicitly(ExpressionEncoder[List[Map[String, String]]])
+  override def bufferEncoder: Encoder[SessionInfoAgg] = Encoders.product[SessionInfoAgg]
+
+  override def outputEncoder: Encoder[SessionInfoAgg] = Encoders.product[SessionInfoAgg]
 }
 
 
-case class SessionInfoAggBuffer(currIdx: Int, maps: ListBuffer[mutable.Map[String, String]])
+object SessionInfoAggregator {
+  case class SessionInfoAgg(var campaignId: String, var channelId: String, purchaseId: ListBuffer[String])
+}

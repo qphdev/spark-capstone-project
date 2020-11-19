@@ -10,6 +10,7 @@ Project is created with:
 * Scala 2.12.12
 * Spark 3.0.1
 * sbt 1.3.13
+* Java 8
 
 __Note__ that AdoptOpenJDK JDK 8 or AdoptOpenJDK JDK 11 is recommended to use with sbt.
 
