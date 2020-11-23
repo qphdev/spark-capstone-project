@@ -28,6 +28,7 @@ class SessionInfoAggregator extends Aggregator[SessionInfo, SessionInfoAgg, Sess
     }
   }
 
+  // all cases
   override def merge(b1: SessionInfoAgg, b2: SessionInfoAgg): SessionInfoAgg = {
     SessionInfoAgg(b1.campaignId + b2.campaignId, b1.channelId + b2.channelId, b1.purchaseId ++ b2.purchaseId)
   }

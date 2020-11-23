@@ -141,10 +141,11 @@ object MarketingDataPreprocessing extends SparkSessionWrapper {
     purchasesDf.createOrReplaceTempView("purchase")
     sessionsDf.createOrReplaceTempView("session")
 
+    // right join
     val joinQuery =
       s"""
          |select purchase.purchaseId, purchaseTime, billingCost, isConfirmed, sessionId, campaignId, channelId
-         |from purchase full outer join session
+         |from purchase right outer join session
          |              on purchase.purchaseId <=> session.purchaseId
          |""".stripMargin
 

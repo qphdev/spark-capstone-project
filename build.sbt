@@ -9,6 +9,6 @@ libraryDependencies += "com.holdenkarau" %% "spark-testing-base" % "2.4.5_0.14.0
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % Test
 
 libraryDependencies ++= Seq("org.apache.spark" %% "spark-core" % "3.0.1",
-  "org.apache.spark" %% "spark-sql" % "3.0.1").map(_ % Provided)
+  "org.apache.spark" %% "spark-sql" % "3.0.1")
 
 parallelExecution in Test := false
