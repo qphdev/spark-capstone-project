@@ -28,9 +28,20 @@ class SessionInfoAggregator extends Aggregator[SessionInfo, SessionInfoAgg, Sess
     }
   }
 
-  // all cases
   override def merge(b1: SessionInfoAgg, b2: SessionInfoAgg): SessionInfoAgg = {
-    SessionInfoAgg(b1.campaignId + b2.campaignId, b1.channelId + b2.channelId, b1.purchaseId ++ b2.purchaseId)
+    val campaignId = (b1.campaignId, b2.campaignId) match {
+      case ("", "") => ""
+      case (cId, "") => cId
+      case ("", cId) => cId
+    }
+
+    val channelId = (b1.channelId, b2.channelId) match {
+      case ("", "") => ""
+      case (chId, "") => chId
+      case ("", chId) => chId
+    }
+
+    SessionInfoAgg(campaignId, channelId, b1.purchaseId ++ b2.purchaseId)
   }
 
   override def finish(red: SessionInfoAgg): SessionInfoAgg = red
